@@ -1,7 +1,7 @@
 export interface TCurrenciesData {
   lastupdate: string;
   rates: {
-    [key: string]: any;
+    [currencyName: string]: number;
   };
   table?: string;
 }

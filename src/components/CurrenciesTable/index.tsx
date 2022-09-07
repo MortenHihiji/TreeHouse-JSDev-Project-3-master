@@ -20,6 +20,7 @@ const CurrenciesTable: React.FC<TConverterBlockProps> = ({ currenciesData }) => 
       rate[0].toLowerCase().includes(searchValue.toLowerCase()),
     );
     setFiltredItems(filteredItems);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchValue]);
 
   return (

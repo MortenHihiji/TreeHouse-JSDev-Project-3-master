@@ -6,9 +6,10 @@ type TConverterBlockProps = {
 };
 
 const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
+  const ratesArray = Object.entries(currenciesData.rates);
+
   const [firstCurrencies, setFirstCurrencies] = React.useState(['UAH', 'USD', 'EUR', 'GBP']);
   const [secondCurrencies, setSecondCurrencies] = React.useState(['UAH', 'USD', 'EUR', 'GBP']);
-  const ratesArray = Object.entries(currenciesData.rates);
 
   const [firstActiveCurrency, setFirstActiveCurrency] = React.useState(firstCurrencies[0]);
   const [secondActiveCurrency, setSecondActiveCurrency] = React.useState(secondCurrencies[1]);
@@ -19,6 +20,7 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
   const [isFirstPopupActive, setIsFirstPopupActive] = React.useState(false);
   const [isSecondPopupActive, setIsSecondPopupActive] = React.useState(false);
 
+  // Popup
   const handleFirstPopupChange = () => {
     setIsFirstPopupActive(!isFirstPopupActive);
   };
@@ -27,6 +29,7 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
     setIsSecondPopupActive(!isSecondPopupActive);
   };
 
+  // Currency Choosing
   const handleChangeFirstActiveCurrency = (currency: string) => {
     if (secondActiveCurrency === currency) {
       setFirstActiveCurrency(secondActiveCurrency);
@@ -37,6 +40,13 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
   };
 
   const handleAddNewFirstCurrency = (currency: string) => {
+    if (firstCurrencies.find((currentCurrency) => currentCurrency === currency)) {
+      handleFirstPopupChange();
+      return setFirstActiveCurrency(currency);
+    }
+
+    setFirstActiveCurrency(currency);
+
     setFirstCurrencies((prev) => [currency, ...prev.slice(0, prev.length - 1)]);
 
     handleChangeFirstActiveCurrency(currency);
@@ -53,12 +63,19 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
   };
 
   const handleAddNewSecondCurrency = (currency: string) => {
+    if (secondCurrencies.find((currentCurrency) => currentCurrency === currency)) {
+      handleSecondPopupChange();
+      return setSecondActiveCurrency(currency);
+    }
+
     setSecondCurrencies((prev) => [currency, ...prev.slice(0, prev.length - 1)]);
 
     handleChangeSecondActiveCurrency(currency);
 
     handleSecondPopupChange();
   };
+
+  // Input Changes
 
   const handleFirstInputChange = (e: React.ChangeEvent<HTMLInputElement & number>) => {
     if (isNaN(+e.target.value)) {
@@ -110,6 +127,7 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
     return setFirstInputValue(+e.target.value * rate);
   };
 
+  // UseEffect for Currency Choosing
   React.useEffect(() => {
     if (!firstInputValue) return;
 
@@ -129,6 +147,8 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
     const rate = secondCurrencyRate / firstCurrencyRate;
 
     return setSecondInputValue(+firstInputValue * rate);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstActiveCurrency, secondActiveCurrency, currenciesData]);
 
   return (
@@ -184,7 +204,7 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
                 className={`converter-currencies__item ${
                   secondActiveCurrency === currency ? 'active' : ''
                 }`}
-                onClick={() => handleAddNewSecondCurrency(currency)}>
+                onClick={() => handleChangeSecondActiveCurrency(currency)}>
                 {currency}
               </div>
             ))}
