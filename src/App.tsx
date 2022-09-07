@@ -1,26 +1,31 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import axios from 'axios';
 
-function App() {
+import { ConverterBlock, CurrenciesTable } from './components';
+import { TCurrenciesData } from './types';
+
+const defaultData = {
+  lastupdate: '',
+  rates: {},
+};
+
+const App = () => {
+  const [currenciesData, setCurrenciesData] = React.useState<TCurrenciesData>(defaultData);
+
+  React.useEffect(() => {
+    setInterval(() => {});
+    axios('https://cdn.cur.su/api/latest.json')
+      .then((data) => {
+        setCurrenciesData(data.data);
+      })
+      .catch((err) => alert(err));
+  }, []);
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="container">
+      <ConverterBlock currenciesData={currenciesData} />
+      <CurrenciesTable currenciesData={currenciesData} />
     </div>
   );
-}
+};
 
 export default App;
