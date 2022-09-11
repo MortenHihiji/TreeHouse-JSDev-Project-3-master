@@ -1,15 +1,22 @@
 import React from 'react';
+
+import CurrenciesPopup from '../CurrenciesPopup';
+
 import { TCurrenciesData } from '../../types';
 
 type TConverterBlockProps = {
   currenciesData: TCurrenciesData;
+  isLoaded: Boolean;
 };
 
-const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
-  const ratesArray = Object.entries(currenciesData.rates);
+const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData, isLoaded }) => {
+  const rates = currenciesData.rates;
+  const ratesArray = Object.entries(rates);
 
-  const [firstCurrencies, setFirstCurrencies] = React.useState(['UAH', 'USD', 'EUR', 'GBP']);
-  const [secondCurrencies, setSecondCurrencies] = React.useState(['UAH', 'USD', 'EUR', 'GBP']);
+  const initialCurrencies = ['UAH', 'USD', 'EUR', 'GBP'];
+
+  const [firstCurrencies, setFirstCurrencies] = React.useState(initialCurrencies);
+  const [secondCurrencies, setSecondCurrencies] = React.useState(initialCurrencies);
 
   const [firstActiveCurrency, setFirstActiveCurrency] = React.useState(firstCurrencies[0]);
   const [secondActiveCurrency, setSecondActiveCurrency] = React.useState(secondCurrencies[1]);
@@ -17,136 +24,87 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
   const [firstInputValue, setFirstInputValue] = React.useState<number | string>(1);
   const [secondInputValue, setSecondInputValue] = React.useState<number | string>(0);
 
-  const [isFirstPopupActive, setIsFirstPopupActive] = React.useState(false);
-  const [isSecondPopupActive, setIsSecondPopupActive] = React.useState(false);
-
-  // Popup
-  const handleFirstPopupChange = () => {
-    setIsFirstPopupActive(!isFirstPopupActive);
-  };
-
-  const handleSecondPopupChange = () => {
-    setIsSecondPopupActive(!isSecondPopupActive);
-  };
-
-  // Currency Choosing
-  const handleChangeFirstActiveCurrency = (currency: string) => {
-    if (secondActiveCurrency === currency) {
-      setFirstActiveCurrency(secondActiveCurrency);
-      return setSecondActiveCurrency(firstActiveCurrency);
+  // Currencies choosing logic
+  const handleChangeActiveCurrency = (name: string, currency: string) => {
+    if (name === 'first') {
+      if (secondActiveCurrency === currency) {
+        setFirstActiveCurrency(secondActiveCurrency);
+        return setSecondActiveCurrency(firstActiveCurrency);
+      }
+      setFirstActiveCurrency(currency);
     }
 
-    setFirstActiveCurrency(currency);
+    if (name === 'second') {
+      if (firstActiveCurrency === currency) {
+        setSecondActiveCurrency(firstActiveCurrency);
+        return setFirstActiveCurrency(secondActiveCurrency);
+      }
+      setSecondActiveCurrency(currency);
+    }
   };
 
-  const handleAddNewFirstCurrency = (currency: string) => {
-    if (firstCurrencies.find((currentCurrency) => currentCurrency === currency)) {
-      handleFirstPopupChange();
-      return setFirstActiveCurrency(currency);
+  const handleAddNewCurrency = (name: string, currency: string) => {
+    if (name === 'first') {
+      if (firstCurrencies.find((currentCurrency) => currentCurrency === currency)) {
+        return setFirstActiveCurrency(currency);
+      }
+
+      setFirstActiveCurrency(currency);
+
+      setFirstCurrencies((prev) => [currency, ...prev.slice(0, prev.length - 1)]);
+
+      handleChangeActiveCurrency(name, currency);
     }
 
-    setFirstActiveCurrency(currency);
+    if (name === 'second') {
+      if (secondCurrencies.find((currentCurrency) => currentCurrency === currency)) {
+        return setSecondActiveCurrency(currency);
+      }
 
-    setFirstCurrencies((prev) => [currency, ...prev.slice(0, prev.length - 1)]);
+      setSecondCurrencies((prev) => [currency, ...prev.slice(0, prev.length - 1)]);
 
-    handleChangeFirstActiveCurrency(currency);
-
-    handleFirstPopupChange();
-  };
-
-  const handleChangeSecondActiveCurrency = (currency: string) => {
-    if (firstActiveCurrency === currency) {
-      setSecondActiveCurrency(firstActiveCurrency);
-      return setFirstActiveCurrency(secondActiveCurrency);
+      handleChangeActiveCurrency(name, currency);
     }
-    setSecondActiveCurrency(currency);
-  };
-
-  const handleAddNewSecondCurrency = (currency: string) => {
-    if (secondCurrencies.find((currentCurrency) => currentCurrency === currency)) {
-      handleSecondPopupChange();
-      return setSecondActiveCurrency(currency);
-    }
-
-    setSecondCurrencies((prev) => [currency, ...prev.slice(0, prev.length - 1)]);
-
-    handleChangeSecondActiveCurrency(currency);
-
-    handleSecondPopupChange();
   };
 
   // Input Changes
-
   const handleFirstInputChange = (e: React.ChangeEvent<HTMLInputElement & number>) => {
-    if (isNaN(+e.target.value)) {
-      return;
-    }
+    if (isNaN(+e.target.value)) return;
+
+    if (firstActiveCurrency === 'USD')
+      setSecondInputValue(+e.target.value * rates[secondActiveCurrency]);
 
     setFirstInputValue(e.target.value);
-
-    if (firstActiveCurrency === 'USD') {
-      const rate = currenciesData.rates[secondActiveCurrency];
-      return setSecondInputValue(+e.target.value * rate);
-    }
-
-    if (secondActiveCurrency === 'USD') {
-      const rate = currenciesData.rates[firstActiveCurrency];
-      return setSecondInputValue(+e.target.value / rate);
-    }
-
-    const firstCurrencyRate = currenciesData.rates[firstActiveCurrency];
-    const secondCurrencyRate = currenciesData.rates[secondActiveCurrency];
-
-    const rate = secondCurrencyRate / firstCurrencyRate;
-
-    return setSecondInputValue(+e.target.value * rate);
+    return setSecondInputValue(
+      +e.target.value * (rates[secondActiveCurrency] / rates[firstActiveCurrency]),
+    );
   };
 
-  const handleSecondInputCahnge = (e: React.ChangeEvent<HTMLInputElement & number>) => {
-    if (isNaN(+e.target.value)) {
-      return;
-    }
+  const handleSecondInputChange = (e: React.ChangeEvent<HTMLInputElement & number>) => {
+    if (isNaN(+e.target.value)) return;
+
+    if (firstActiveCurrency === 'USD')
+      setSecondInputValue(+e.target.value * rates[secondActiveCurrency]);
 
     setSecondInputValue(e.target.value);
-
-    if (firstActiveCurrency === 'USD') {
-      const rate = currenciesData.rates[secondActiveCurrency];
-      return setFirstInputValue(+e.target.value / rate);
-    }
-
-    if (secondActiveCurrency === 'USD') {
-      const rate = currenciesData.rates[firstActiveCurrency];
-      return setFirstInputValue(+e.target.value * rate);
-    }
-
-    const firstCurrencyRate = currenciesData.rates[firstActiveCurrency];
-    const secondCurrencyRate = currenciesData.rates[secondActiveCurrency];
-
-    const rate = firstCurrencyRate / secondCurrencyRate;
-
-    return setFirstInputValue(+e.target.value * rate);
+    return setFirstInputValue(
+      +e.target.value * (rates[firstActiveCurrency] / rates[secondActiveCurrency]),
+    );
   };
 
   // UseEffect for Currency Choosing
   React.useEffect(() => {
     if (!firstInputValue) return;
 
-    if (firstActiveCurrency === 'USD') {
-      const rate = currenciesData.rates[secondActiveCurrency];
-      return setSecondInputValue(+firstInputValue * rate);
-    }
+    if (firstActiveCurrency === 'USD')
+      setSecondInputValue(+firstInputValue * rates[secondActiveCurrency]);
 
-    if (secondActiveCurrency === 'USD') {
-      const rate = currenciesData.rates[firstActiveCurrency];
-      return setSecondInputValue(+firstInputValue / rate);
-    }
+    if (secondActiveCurrency === 'USD')
+      setSecondInputValue(+firstInputValue * rates[firstActiveCurrency]);
 
-    const firstCurrencyRate = currenciesData.rates[firstActiveCurrency];
-    const secondCurrencyRate = currenciesData.rates[secondActiveCurrency];
-
-    const rate = secondCurrencyRate / firstCurrencyRate;
-
-    return setSecondInputValue(+firstInputValue * rate);
+    return setSecondInputValue(
+      (+firstInputValue * rates[secondActiveCurrency]) / rates[firstActiveCurrency],
+    );
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstActiveCurrency, secondActiveCurrency, currenciesData]);
@@ -162,33 +120,14 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
                 className={`converter-currencies__item ${
                   firstActiveCurrency === currency ? 'active' : ''
                 }`}
-                onClick={() => handleChangeFirstActiveCurrency(currency)}>
+                onClick={() => handleChangeActiveCurrency('first', currency)}>
                 {currency}
               </div>
             ))}
-            <div className="converter-currencies__item button" onClick={handleFirstPopupChange}>
-              <svg
-                width="14"
-                height="8"
-                viewBox="0 0 14 8"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 0L7 5L12 0L14 1L7 8L0 1L2 0Z" fill="black" />
-              </svg>
-            </div>
-            {isFirstPopupActive ? (
-              <div className="converter-currencies__popup">
-                <ul>
-                  {ratesArray.map((rate, index) => (
-                    <li key={index} onClick={() => handleAddNewFirstCurrency(rate[0])}>
-                      {rate[0]}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              ''
-            )}
+            <CurrenciesPopup
+              ratesArray={ratesArray}
+              handleAddCurrency={(currency: string) => handleAddNewCurrency('first', currency)}
+            />
           </div>
           <input
             className="converter-input"
@@ -204,37 +143,18 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData }) => {
                 className={`converter-currencies__item ${
                   secondActiveCurrency === currency ? 'active' : ''
                 }`}
-                onClick={() => handleChangeSecondActiveCurrency(currency)}>
+                onClick={() => handleChangeActiveCurrency('second', currency)}>
                 {currency}
               </div>
             ))}
-            <div className="converter-currencies__item button" onClick={handleSecondPopupChange}>
-              <svg
-                width="14"
-                height="8"
-                viewBox="0 0 14 8"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 0L7 5L12 0L14 1L7 8L0 1L2 0Z" fill="black" />
-              </svg>
-            </div>
-            {isSecondPopupActive ? (
-              <div className="converter-currencies__popup">
-                <ul>
-                  {ratesArray.map((rate, index) => (
-                    <li key={index} onClick={() => handleAddNewSecondCurrency(rate[0])}>
-                      {rate[0]}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              ''
-            )}
+            <CurrenciesPopup
+              ratesArray={ratesArray}
+              handleAddCurrency={(currency: string) => handleAddNewCurrency('second', currency)}
+            />
           </div>
           <input
             className="converter-input"
-            onChange={handleSecondInputCahnge}
+            onChange={handleSecondInputChange}
             value={secondInputValue ? Math.round(+secondInputValue * 100) / 100 : ''}
           />
         </div>

@@ -35,15 +35,24 @@
       flex-wrap: wrap;
     }
 
+    &__loading {
+      width: 190px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.13);
+      display: flex;
+    }
+
     &__item {
       width: 190px;
       margin-bottom: 10px;
       border: 1px solid rgba(0, 0, 0, 0.13);
       display: flex;
       justify-content: space-between;
+
       margin-right: 15px;
 
       &-name {
+        width: 55px;
         padding: 5px 10px;
         border-right: 1px solid rgba(0, 0, 0, 0.13);
       }
