@@ -9,11 +9,11 @@ type TConverterBlockProps = {
   isLoaded: Boolean;
 };
 
+const initialCurrencies = ['UAH', 'USD', 'EUR', 'GBP'];
+
 const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData, isLoaded }) => {
   const rates = currenciesData.rates;
   const ratesArray = Object.entries(rates);
-
-  const initialCurrencies = ['UAH', 'USD', 'EUR', 'GBP'];
 
   const [firstCurrencies, setFirstCurrencies] = React.useState(initialCurrencies);
   const [secondCurrencies, setSecondCurrencies] = React.useState(initialCurrencies);
@@ -24,87 +24,80 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData, isLoad
   const [firstInputValue, setFirstInputValue] = React.useState<number | string>(1);
   const [secondInputValue, setSecondInputValue] = React.useState<number | string>(0);
 
-  // Currencies choosing logic
-  const handleChangeActiveCurrency = (name: string, currency: string) => {
-    if (name === 'first') {
-      if (secondActiveCurrency === currency) {
-        setFirstActiveCurrency(secondActiveCurrency);
-        return setSecondActiveCurrency(firstActiveCurrency);
-      }
-      setFirstActiveCurrency(currency);
-    }
-
-    if (name === 'second') {
-      if (firstActiveCurrency === currency) {
-        setSecondActiveCurrency(firstActiveCurrency);
-        return setFirstActiveCurrency(secondActiveCurrency);
-      }
-      setSecondActiveCurrency(currency);
-    }
+  // Utils
+  const flipCurrencies = () => {
+    setFirstActiveCurrency(secondActiveCurrency);
+    setSecondActiveCurrency(firstActiveCurrency);
   };
 
-  const handleAddNewCurrency = (name: string, currency: string) => {
-    if (name === 'first') {
-      if (firstCurrencies.find((currentCurrency) => currentCurrency === currency)) {
-        return setFirstActiveCurrency(currency);
-      }
+  const handleChangeCurrenciesList = (prev: string[], currency: string) => [
+    currency,
+    ...prev.slice(0, prev.length - 1),
+  ];
 
-      setFirstActiveCurrency(currency);
+  const checkCurrencyEquality = (list: string[], currency: string) =>
+    list.find((currentCurrency) => currentCurrency === currency);
 
-      setFirstCurrencies((prev) => [currency, ...prev.slice(0, prev.length - 1)]);
+  // Currencies choosing logic
+  const handleChangeFirstActiveCurrency = (currency: string) => {
+    if (secondActiveCurrency === currency) flipCurrencies();
 
-      handleChangeActiveCurrency(name, currency);
+    setFirstActiveCurrency(currency);
+  };
+
+  const handleChangeSecondActiveCurrency = (currency: string) => {
+    if (firstActiveCurrency === currency) flipCurrencies();
+
+    setSecondActiveCurrency(currency);
+  };
+
+  const handleAddFirstNewCurrency = (currency: string) => {
+    if (checkCurrencyEquality(firstCurrencies, currency)) {
+      return setFirstActiveCurrency(currency);
     }
 
-    if (name === 'second') {
-      if (secondCurrencies.find((currentCurrency) => currentCurrency === currency)) {
-        return setSecondActiveCurrency(currency);
-      }
+    setFirstCurrencies((prev) => handleChangeCurrenciesList(prev, currency));
 
-      setSecondCurrencies((prev) => [currency, ...prev.slice(0, prev.length - 1)]);
+    handleChangeFirstActiveCurrency(currency);
+  };
 
-      handleChangeActiveCurrency(name, currency);
+  const handleAddSecondNewCurrency = (currency: string) => {
+    if (checkCurrencyEquality(secondCurrencies, currency)) {
+      return setSecondActiveCurrency(currency);
     }
+
+    setSecondCurrencies((prev) => handleChangeCurrenciesList(prev, currency));
+
+    handleChangeSecondActiveCurrency(currency);
   };
 
   // Input Changes
-  const handleFirstInputChange = (e: React.ChangeEvent<HTMLInputElement & number>) => {
-    if (isNaN(+e.target.value)) return;
+  const onChangeFromPrice = (e: React.ChangeEvent<HTMLInputElement & number>) => {
+    const value = +e.target.value;
+    if (isNaN(value)) return;
 
-    if (firstActiveCurrency === 'USD')
-      setSecondInputValue(+e.target.value * rates[secondActiveCurrency]);
-
-    setFirstInputValue(e.target.value);
-    return setSecondInputValue(
-      +e.target.value * (rates[secondActiveCurrency] / rates[firstActiveCurrency]),
-    );
+    const price = value / rates[firstActiveCurrency];
+    const result = price * rates[secondActiveCurrency];
+    setFirstInputValue(value);
+    setSecondInputValue(result);
   };
 
-  const handleSecondInputChange = (e: React.ChangeEvent<HTMLInputElement & number>) => {
-    if (isNaN(+e.target.value)) return;
+  const onChangeToPrice = (e: React.ChangeEvent<HTMLInputElement & number>) => {
+    const value = +e.target.value;
+    if (isNaN(value)) return;
 
-    if (firstActiveCurrency === 'USD')
-      setSecondInputValue(+e.target.value * rates[secondActiveCurrency]);
-
-    setSecondInputValue(e.target.value);
-    return setFirstInputValue(
-      +e.target.value * (rates[firstActiveCurrency] / rates[secondActiveCurrency]),
-    );
+    const result = (rates[firstActiveCurrency] / rates[secondActiveCurrency]) * value;
+    setFirstInputValue(result);
+    setSecondInputValue(value);
   };
 
   // UseEffect for Currency Choosing
   React.useEffect(() => {
     if (!firstInputValue) return;
 
-    if (firstActiveCurrency === 'USD')
-      setSecondInputValue(+firstInputValue * rates[secondActiveCurrency]);
+    const result = (+firstInputValue * rates[secondActiveCurrency]) / rates[firstActiveCurrency];
 
-    if (secondActiveCurrency === 'USD')
-      setSecondInputValue(+firstInputValue * rates[firstActiveCurrency]);
-
-    return setSecondInputValue(
-      (+firstInputValue * rates[secondActiveCurrency]) / rates[firstActiveCurrency],
-    );
+    return setSecondInputValue(result);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstActiveCurrency, secondActiveCurrency, currenciesData]);
@@ -120,19 +113,20 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData, isLoad
                 className={`converter-currencies__item ${
                   firstActiveCurrency === currency ? 'active' : ''
                 }`}
-                onClick={() => handleChangeActiveCurrency('first', currency)}>
+                onClick={() => handleChangeFirstActiveCurrency(currency)}>
                 {currency}
               </div>
             ))}
             <CurrenciesPopup
               ratesArray={ratesArray}
-              handleAddCurrency={(currency: string) => handleAddNewCurrency('first', currency)}
+              handleAddCurrency={(currency: string) => handleAddFirstNewCurrency(currency)}
             />
           </div>
           <input
             className="converter-input"
-            onChange={handleFirstInputChange}
+            onChange={onChangeFromPrice}
             value={firstInputValue ? Math.round(+firstInputValue * 100) / 100 : ''}
+            disabled={!isLoaded}
           />
         </div>
         <div className="converter-item">
@@ -143,19 +137,20 @@ const ConverterBlock: React.FC<TConverterBlockProps> = ({ currenciesData, isLoad
                 className={`converter-currencies__item ${
                   secondActiveCurrency === currency ? 'active' : ''
                 }`}
-                onClick={() => handleChangeActiveCurrency('second', currency)}>
+                onClick={() => handleChangeSecondActiveCurrency(currency)}>
                 {currency}
               </div>
             ))}
             <CurrenciesPopup
               ratesArray={ratesArray}
-              handleAddCurrency={(currency: string) => handleAddNewCurrency('second', currency)}
+              handleAddCurrency={(currency: string) => handleAddSecondNewCurrency(currency)}
             />
           </div>
           <input
             className="converter-input"
-            onChange={handleSecondInputChange}
+            onChange={onChangeToPrice}
             value={secondInputValue ? Math.round(+secondInputValue * 100) / 100 : ''}
+            disabled={!isLoaded}
           />
         </div>
       </div>

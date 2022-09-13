@@ -2,7 +2,7 @@ import React from 'react';
 
 type TCurrenciesPopup = {
   ratesArray: any[];
-  handleAddCurrency: Function;
+  handleAddCurrency: (currency: string) => void;
 };
 
 const CurrenciesPopup = ({ ratesArray, handleAddCurrency }: TCurrenciesPopup) => {
